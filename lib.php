@@ -40,6 +40,7 @@ function subcourse_add_instance($subcourse) {
     global $DB;
 
     $subcourse->timecreated = time();
+    $subcourse->compulsory = isset($subcourse->compulsory) ? 1 : 0;
     $newid = $DB->insert_record("subcourse", $subcourse);
 
     // create grade_item but do not fetch grades - the context does not exist yet and we can't
@@ -69,10 +70,16 @@ function subcourse_add_instance($subcourse) {
  * @return boolean Success/Fail
  */
 function subcourse_update_instance($subcourse) {
-    global $DB;
+    global $DB, $COURSE;
 
     $subcourse->timemodified = time();
     $subcourse->id = $subcourse->instance;
+
+    // If we have a form with the refcourse disabled, we won't get that data sent back via
+    $existingrecord = $DB->get_record('subcourse', array('id' => $subcourse->id));
+    if(!isset($subcourse->refcourse)) {
+        $subcourse->refcourse = $existingrecord->refcourse;
+    }
 
     try {
         subcourse_grades_update($subcourse->course, $subcourse->id,
@@ -81,8 +88,19 @@ function subcourse_update_instance($subcourse) {
         mtrace($e->getMessage());
     }
     $subcourse->timefetched = time();
+    $subcourse->compulsory = isset($subcourse->compulsory) ? 1 : 0;
 
     $success = $DB->update_record("subcourse", $subcourse);
+
+    // We need to allow toggle of the compulsory field of the enrolment instance
+    $existingenrol = subcourse_meta_exists($COURSE->id, $subcourse->refcourse);
+    if ($existingenrol) {
+        if ($existingenrol->customint2 != $subcourse->compulsory) {
+            $DB->set_field('enrol', 'customint2', $subcourse->compulsory,
+                           array('id' => $existingenrol->id));
+
+        }
+    }
 
     if (isset($subcourse->addmeta) && $subcourse->addmeta) {
         // Add metacourse enrolment instance to the sub course so that it inherits
@@ -119,7 +137,7 @@ function subcourse_remove_meta($subcourse) {
  *
  * @param int $course
  * @param int $refcourse
- * @return bool
+ * @return object
  */
 function subcourse_meta_exists($course, $refcourse) {
     global $DB;
@@ -127,7 +145,7 @@ function subcourse_meta_exists($course, $refcourse) {
     $instance = $DB->get_record('enrol', array('courseid' => $refcourse,
                                                'enrol' => 'qualification',
                                                'customint1' => $course));
-    return $instance ? true :false;
+    return $instance;
 }
 
 /**
@@ -142,8 +160,9 @@ function subcourse_add_meta($subcourse) {
     // Make a new enrolment instance
     $enrol = enrol_get_plugin('qualification');
     $course = $DB->get_record('course', array('id' => $subcourse->refcourse), '*', MUST_EXIST);
-    $enrolid = $enrol->add_instance($course, array('customint1' => $subcourse->course));
-    enrol_meta_sync($course->id);
+    $enrolid = $enrol->add_instance($course, array('customint1' => $subcourse->course,
+                                                   'customint2' => $subcourse->compulsory));
+    enrol_qualification_sync($course->id);
     return (bool)$enrolid;
 }
 

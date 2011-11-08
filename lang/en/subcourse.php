@@ -37,6 +37,8 @@ $string['mods_help'] = 'The module provides very simple yet useful functionality
 $string['index_help'] = '';
 $string['currentgrade'] = 'Currrent grade:';
 $string['addmeta'] = 'Add a meta course enrolment instance to this subcourse';
+$string['compulsory'] = 'Should students be forced to take this course?';
+
 
 
 

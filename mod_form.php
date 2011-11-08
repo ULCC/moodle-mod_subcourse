@@ -73,12 +73,19 @@ class mod_subcourse_mod_form extends moodleform_mod {
         $addmetaelement = $mform->addElement('checkbox', 'addmeta',
                            get_string('addmeta', 'subcourse'));
 
+        // Do we want the course to be one that students must take?
+        $compulsoryelement = $mform->addElement('checkbox', 'compulsory',
+                           get_string('compulsory', 'subcourse'));
+        $mform->disabledIf('compulsory', 'addmeta');
+
         // If there is a meta enrolment already, we don't want to allow people to delete it as we
         // may cause problems. Force them to delete the whole subcourse if they want to do this
         if (!empty($this->current->id)) {
             $metaexists = subcourse_meta_exists($this->current->course, $this->current->refcourse);
             if ($metaexists) {
                 $mform->setDefault('addmeta', 'checked');
+                $compulsorydefault = $metaexists->customint2 ? 'checked' : '';
+                $mform->setDefault('compulsory', $compulsorydefault);
                 $refcourseelement->updateAttributes(array('disabled' => true));
                 $addmetaelement->updateAttributes(array('disabled' => true));
             }
