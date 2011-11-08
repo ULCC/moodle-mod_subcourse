@@ -106,9 +106,9 @@ function subcourse_remove_meta($subcourse) {
 
     $result = true;
     if ($instance = $DB->get_record('enrol', array('courseid' => $subcourse->refcourse,
-                                                   'enrol' => 'meta',
+                                                   'enrol' => 'qualification',
                                                    'customint1' => $subcourse->course))) {
-        $plugin = enrol_get_plugin('meta');
+        $plugin = enrol_get_plugin('qualification');
         $result = $plugin->delete_instance($instance);
     }
     return $result;
@@ -125,7 +125,7 @@ function subcourse_meta_exists($course, $refcourse) {
     global $DB;
 
     $instance = $DB->get_record('enrol', array('courseid' => $refcourse,
-                                               'enrol' => 'meta',
+                                               'enrol' => 'qualification',
                                                'customint1' => $course));
     return $instance ? true :false;
 }
@@ -137,10 +137,10 @@ function subcourse_meta_exists($course, $refcourse) {
 function subcourse_add_meta($subcourse) {
     global $CFG, $DB;
 
-    require_once($CFG->dirroot.'/enrol/meta/locallib.php');
+    require_once($CFG->dirroot.'/enrol/qualification/locallib.php');
 
     // Make a new enrolment instance
-    $enrol = enrol_get_plugin('meta');
+    $enrol = enrol_get_plugin('qualification');
     $course = $DB->get_record('course', array('id' => $subcourse->refcourse), '*', MUST_EXIST);
     $enrolid = $enrol->add_instance($course, array('customint1' => $subcourse->course));
     enrol_meta_sync($course->id);
